@@ -3,13 +3,13 @@ const router = express.Router();
 const moviesController = require("../controllers/moviesControllers");
 
 // /POST /movies/add
-router.post("/movies/add", moviesController.addMovie);
+router.post("/add", moviesController.addMovie);
 
 // /DELETE /movies/:movieId
-router.delete("/movies/:movieId", moviesController.deleteMovie);
+router.delete("/:movieId", moviesController.deleteMovie);
 
 // /GET /movies/:movieId
-router.get("/movies/:movieId", moviesController.singleMovie);
+router.get("/:movieId", moviesController.singleMovie);
 
 // /GET /movies
-router.get("movies", moviesController.allMovies);
+router.get(moviesController.allMovies);

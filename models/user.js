@@ -4,6 +4,14 @@ const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
   name: { type: String, require: true },
+  email: {
+    type: String,
+    required: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
   movies: [
     {
       type: Schema.Types.ObjectId,

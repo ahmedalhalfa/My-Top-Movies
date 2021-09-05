@@ -3,16 +3,16 @@ const router = express.Router();
 const listsController = require("../controllers/listsControllers");
 
 // /POST /lists/create
-router.post("/lists/create", listsController.createList);
+router.post("/create", listsController.createList);
 
 // /PATCH /lists/:listId
-router.patch("/lists/:listId", listsController.editList);
+router.patch("/:listId", listsController.editList);
 
 // /DELETE /lists/:listId
-router.delete("/lists/:listId"), listsController.deleteList;
+router.delete("/:listId"), listsController.deleteList;
 
 // /GET //list
-router.get("lists/:listId", listsController.singleList);
+router.get("/:listId", listsController.singleList);
 
 // /GET //lists
-router.get("lists", listsController.allLists);
+router.get(listsController.allLists);
