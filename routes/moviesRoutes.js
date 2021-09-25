@@ -13,3 +13,5 @@ router.get("/:movieId", moviesController.singleMovie);
 
 // /GET /movies
 router.get(moviesController.allMovies);
+
+// edit movie

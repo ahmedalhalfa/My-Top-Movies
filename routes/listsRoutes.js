@@ -15,4 +15,4 @@ router.delete("/:listId"), listsController.deleteList;
 router.get("/:listId", listsController.singleList);
 
 // /GET //lists
-router.get(listsController.allLists);
+router.get("/", listsController.allLists);

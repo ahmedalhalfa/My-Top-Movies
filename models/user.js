@@ -1,9 +1,11 @@
 const mongoose = require("mongoose");
-const movie = require("./movie");
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
-  name: { type: String, require: true },
+  name: {
+    type: String,
+    require: true
+  },
   email: {
     type: String,
     required: true,
@@ -15,15 +17,17 @@ const userSchema = new Schema({
   movies: [
     {
       type: Schema.Types.ObjectId,
-      ref: movie,
+      ref: "Movie",
       required: true,
     },
   ],
   lists: [
     {
       type: Schema.Types.ObjectId,
-      ref: List,
+      ref: "List",
       required: true,
     },
   ],
 });
+
+module.exports = mongoose.model("User", userSchema);
