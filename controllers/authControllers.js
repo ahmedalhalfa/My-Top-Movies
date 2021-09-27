@@ -49,7 +49,6 @@ exports.postLogin = async (req, res, next) => {
     const isEqual = await bcrypt.compare(password, user.password);
     if (isEqual) {
       const token = jwt.sign(
-        // --> what is exactly JWT ?
         {
           email: user.email,
           userId: user._id.toString(),

@@ -10,14 +10,14 @@ const listSchema = new Schema(
 
     creator: {
       type: Schema.Types.ObjectId,
-      ref: User,
+      ref: "User",
       require: true,
     },
 
     movies: [
       {
         type: Schema.Types.ObjectId,
-        ref: Movie,
+        ref: "Movie",
         require: true,
       },
     ],

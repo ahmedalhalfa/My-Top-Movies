@@ -21,12 +21,12 @@ const movieSchema = new Schema(
     },
     creator: {
       type: Schema.Types.ObjectId,
-      ref: User,
+      ref: "User",
       required: true,
     },
     list: {
       type: Schema.Types.ObjectId,
-      ref: List,
+      ref: "List",
       required: true,
     },
   },
