@@ -29,7 +29,27 @@ router.post(
 );
 
 // /PATCH /lists/:listId
-router.patch("/:listId", isAuth, listsController.editList);
+router.patch(
+  "/:listId",
+  isAuth,
+  [
+    body("title")
+      .custom(async (value, { req }) => {
+        try {
+          const list = await List.findOne({ title: req.body.title });
+          if (list) {
+            return Promise.reject(
+              "this list already exists, please choose another name"
+            );
+          }
+        } catch (err) {
+          return next(err);
+        }
+      })
+      .trim(),
+  ],
+  listsController.editList
+);
 
 // /DELETE /lists/:listId
 router.delete("/:listId", isAuth, listsController.deleteList);
