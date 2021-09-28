@@ -19,7 +19,9 @@ exports.addMovie = (req, res, next) => {
   movie.save()
 };
 
-exports.deleteMovie = (req, res, next) => {};
+exports.deleteMovieEntirely = (req, res, next) => {};
+
+exports.deleteMovieFromList = (req, res, next) => {};
 
 exports.editMovie = (req, res, next) => {};
 

@@ -15,3 +15,5 @@ router.get("/:movieId", moviesController.singleMovie);
 router.get(moviesController.allMovies);
 
 // edit movie
+
+// deleteMovieFromList /:listId/:movieId

@@ -36,7 +36,47 @@ exports.createList = async (req, res, next) => {
   }
 };
 
-exports.editList = async (req, res, next) => {};
+exports.editList = async (req, res, next) => {
+  const newTitle = req.body.title;
+  const listId = req.params.listId;
+  let list;
+  try {
+    list = await List.findById(listId);
+    if (!list) {
+      const error = new Error("sorry, this list doesn't exist");
+      error.statusCode = 404;
+      return next(err);
+    }
+  } catch (err) {
+    const error = new Error("system failure");
+    error.data = err;
+    return next(error);
+  }
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("validation failed");
+    error.statusCode = 422;
+    error.data = errors.array();
+    return next(err);
+  }
+
+  if (list.creator.toString() !== req.userId) {
+    const error = new Error("sorry, you aren't authorized to do this");
+    error.statusCode = 403;
+    return next(error);
+  }
+
+  if (list.title !== newTitle) {
+    list.title = newTitle;
+    await list.save();
+    return res.status(200).json({ message: "list updated", list: list });
+  }
+
+  res.status(406).json({
+    message: "please enter a different title other than the old one.",
+  });
+};
 
 exports.deleteList = async (req, res, next) => {
   const listId = req.params.listId;
@@ -80,9 +120,27 @@ exports.singleList = async (req, res, next) => {
 
     res.status(200).json({ data: list });
   } catch (err) {
-    const error = new Error("system failure, couldn't retrieve the list data from the database");
+    const error = new Error(
+      "system failure, couldn't retrieve the list data from the database"
+    );
     return next(err);
   }
 };
 
-exports.allLists = async (req, res, next) => {};
+exports.allLists = async (req, res, next) => {
+  try {
+    const lists = await List.find({});
+    if (lists.length === 0) {
+      const error = new Error("sorry, you didn't create any list yet");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    res.status(200).json({ data: lists });
+  } catch (err) {
+    const error = new Error(
+      "system failure, couldn't retrieve the list data from the database"
+    );
+    return next(err);
+  }
+};
