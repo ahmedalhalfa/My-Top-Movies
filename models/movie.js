@@ -24,11 +24,11 @@ const movieSchema = new Schema(
       ref: "User",
       required: true,
     },
-    list: {
+    lists: [{
       type: Schema.Types.ObjectId,
       ref: "List",
       required: true,
-    },
+    }],
   },
   { timestamps: true }
 );

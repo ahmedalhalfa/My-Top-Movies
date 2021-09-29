@@ -1,13 +1,34 @@
 const express = require("express");
 const mongoose = require("mongoose");
-
+const path = require("path");
+const multer = require("multer");
 const app = express();
 
 // importing the routes
 const authRoutes = require("./routes/authRoutes");
 const listsRoutes = require("./routes/listsRoutes");
-// const moviesRoutes = require("./routes/moviesRoutes");
+const moviesRoutes = require("./routes/moviesRoutes");
 
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 // CORS
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -23,12 +44,17 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
+app.use("/images", express.static(path.join(__dirname, "images")));
+
 app.use("/auth", authRoutes);
 app.use("/lists", listsRoutes);
-// app.use("/movies", moviesRoutes);
-// app.use((req, res, next) => {
-//   res.status(404).json({ message: "page not found" });
-// });
+app.use("/movies", moviesRoutes);
+app.use((req, res, next) => {
+  res.status(404).json({ message: "page not found" });
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {

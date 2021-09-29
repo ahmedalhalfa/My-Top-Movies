@@ -13,7 +13,7 @@ router.post(
       .withMessage("Please enter a valid email")
       .custom(async (value, { req }) => {
         const userDoc = await User.findOne({ email: req.body.email });
-        if (userDoc) return Promise.reject("E-mail address already exists"); 
+        if (userDoc) return Promise.reject("E-mail address already exists");
       })
       .normalizeEmail(),
     body("password")
@@ -27,5 +27,7 @@ router.post(
 
 // /POST /login
 router.post("/login", authControllers.postLogin);
+
+// /PATCH /edit --> for editing user info
 
 module.exports = router;

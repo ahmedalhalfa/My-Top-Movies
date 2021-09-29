@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const List = require("../models/list");
 const User = require("../models/user");
+const mongoose = require("mongoose");
 
 exports.createList = async (req, res, next) => {
   const errors = validationResult(req);
@@ -24,6 +25,7 @@ exports.createList = async (req, res, next) => {
     await user.save();
     res.status(201).json({
       message: "created the list successfully",
+      list: list,
       creator: req.userId,
       createdAt: list.createdAt,
     });
@@ -109,9 +111,12 @@ exports.deleteList = async (req, res, next) => {
 };
 
 exports.singleList = async (req, res, next) => {
-  listId = req.params.listId;
+  const listId = req.params.listId;
   try {
-    const list = await List.findById(listId);
+    const list = await List.find({
+      _id: listId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
     if (!list) {
       const error = new Error("sorry, this list doesn't exist");
       error.statusCode = 404;
@@ -123,13 +128,16 @@ exports.singleList = async (req, res, next) => {
     const error = new Error(
       "system failure, couldn't retrieve the list data from the database"
     );
-    return next(err);
+    error.data = err;
+    return next(error);
   }
 };
 
 exports.allLists = async (req, res, next) => {
   try {
-    const lists = await List.find({});
+    const lists = await List.find({
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
     if (lists.length === 0) {
       const error = new Error("sorry, you didn't create any list yet");
       error.statusCode = 404;

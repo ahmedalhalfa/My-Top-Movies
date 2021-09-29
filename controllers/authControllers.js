@@ -54,7 +54,7 @@ exports.postLogin = async (req, res, next) => {
           userId: user._id.toString(),
         },
         "91FFFCEAFFFF70FFFD8700FFF91BFFF34E00FB00000201FB",
-        { expiresIn: "1h" }
+        { expiresIn: "10h" }
       );
       res.status(200).json({ token: token, message: "you logged in" });
     } else res.status(403).json({ message: "wrong password" });
