@@ -16,9 +16,15 @@ const listSchema = new Schema(
 
     movies: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Movie",
-        require: true,
+        movieId: {
+          type: Schema.Types.ObjectId,
+          ref: "Movie",
+          require: true,
+        },
+        rank: {
+          type: Number,
+          required: true,
+        },
       },
     ],
   },

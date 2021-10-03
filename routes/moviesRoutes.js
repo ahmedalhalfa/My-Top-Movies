@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const moviesController = require("../controllers/moviesControllers");
 const Movie = require("../models/movie");
+const List = require("../models/list");
 const { body } = require("express-validator");
 const isAuth = require("../middlewares/isAuth");
 
@@ -16,7 +17,7 @@ router.post(
       .custom(async (value, { req }) => {
         try {
           const movie = await Movie.findOne({
-            title: req.body.title,
+            title: value,
             creator: mongoose.Types.ObjectId(req.userId),
           });
           if (movie) {
@@ -34,21 +35,9 @@ router.post(
         try {
           const maxRankMovie = await Movie.findOne({
             creator: mongoose.Types.ObjectId(req.userId),
-          })
-            .sort("-rank")
-            .limit(1); // maximum value of rank
-          const minRankMovie = await Movie.findOne({
-            creator: mongoose.Types.ObjectId(req.userId),
-          })
-            .sort("rank")
-            .limit(1); // minimumu value of rank
-          let maxRank = maxRankMovie ? maxRankMovie.rank : 0;
-          let minRank = minRankMovie ? minRankMovie.rank : 0;
-          if (
-            req.body.rank > maxRank + 1 ||
-            req.body.rank < minRank - 1 ||
-            req.body.rank === 0
-          ) {
+          }).sort("-rank");
+          let maxRank = maxRankMovie ? maxRankMovie.rank : 0; // maximum value of rank
+          if (value > maxRank + 1 || value <= 0) {
             return Promise.reject("sorry, this rank is invalid");
           }
         } catch (err) {
@@ -59,19 +48,73 @@ router.post(
   moviesController.addMovie
 );
 
+// /PATCH /movies/:movieId
+router.patch(
+  "/:movieId",
+  isAuth,
+  [
+    body("title")
+      .trim()
+      .custom(async (value, { req }) => {
+        if (value === "") return;
+        try {
+          const movie = await Movie.findOne({
+            title: value,
+            creator: mongoose.Types.ObjectId(req.userId),
+          });
+          if (movie) {
+            return Promise.reject(
+              "invalid new title, this movie already exists, please choose another title"
+            );
+          }
+        } catch (err) {
+          return Promise.reject("system failure");
+        }
+      }),
+    body("description").trim(),
+    body("rank").custom(async (value, { req }) => {
+      if (!value) return;
+      try {
+        let movies = await Movie.find({});
+        if (value > movies.length || value <= 0) {
+          return Promise.reject("sorry, this rank is invalid");
+        }
+      } catch (err) {
+        return Promise.reject("system failure");
+      }
+    }),
+  ],
+  moviesController.editMovie
+);
+
+// /POST /:movieId/addToList/:listId
+router.post(
+  "/:movieId/addToList/:listId",
+  isAuth,
+  moviesController.addMovieToList
+);
+
+// /PATCH /:movieId/lists/:listId
+router.patch(
+  "/:movieId/lists/:listId",
+  isAuth,
+  moviesController.editMovieRankInList
+);
+
 // /DELETE /movies/:movieId
 router.delete("/:movieId", isAuth, moviesController.deleteMovieEntirely);
 
-// /DELETE /movies/:movieId/:listId/
-router.delete("/:movieId", isAuth, moviesController.deleteMovieFromList);
+// /DELETE /movies/:movieId/lists/:listId/
+router.delete(
+  "/:movieId/lists/:listId",
+  isAuth,
+  moviesController.deleteMovieFromList
+);
 
 // /GET /movies/:movieId
 router.get("/:movieId", isAuth, moviesController.singleMovie);
 
 // /GET /movies
 router.get(isAuth, moviesController.allMovies);
-
-// /PATCH /movies/:movieId
-router.patch("/:movieId", isAuth, moviesController.editMovie);
 
 module.exports = router;

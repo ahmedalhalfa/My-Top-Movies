@@ -26,8 +26,6 @@ exports.createList = async (req, res, next) => {
     res.status(201).json({
       message: "created the list successfully",
       list: list,
-      creator: req.userId,
-      createdAt: list.createdAt,
     });
   } catch (err) {
     const error = new Error(
