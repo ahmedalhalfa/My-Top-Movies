@@ -71,7 +71,7 @@ exports.editMovie = async (req, res, next) => {
 
   // you dont edit the creator neither the lists
   try {
-    const movie = await Movie.findById(movieId);
+    const movie = await Movie.findById(movieId); // add the user id
     if (!movie) {
       const error = new Error("this movies doesn't exist");
       error.statusCode = 404;
@@ -171,8 +171,7 @@ exports.addMovieToList = async (req, res, next) => {
 
     let maxRank = 0; // maximum value of rank
     for (const movieItem of list.movies) {
-      let Rank = movieItem.rank;
-      if (maxRank < Rank) maxRank = Rank;
+      if (maxRank < movieItem.rank) maxRank = movieItem.rank;
     }
     if (rank > maxRank + 1 || rank <= 0) {
       const error = new Error("sorry, invalid rank");
@@ -183,7 +182,10 @@ exports.addMovieToList = async (req, res, next) => {
     if (rank <= maxRank) {
       const dist = maxRank - rank;
       for (let i = 0; i <= dist; i++) {
-        list.movies[maxRank - i - 1].rank += 1;
+        let movieIndex = list.movies.findIndex(
+          (movie) => movie.rank === maxRank - i
+        );
+        list.movies[movieIndex].rank += 1;
       }
     }
     movie.lists.push(list);
@@ -241,8 +243,7 @@ exports.editMovieRankInList = async (req, res, next) => {
     for (const movieItem of list.movies) {
       j++;
       if (movieItem.movieId.toString() === movieId) movieIndex = j;
-      let Rank = movieItem.rank;
-      if (maxRank < Rank) maxRank = Rank;
+      if (maxRank < movieItem.rank) maxRank = movieItem.rank;
     }
     if (rank > list.movies.length || rank <= 0) {
       const error = new Error("sorry, invalid rank");
@@ -252,24 +253,36 @@ exports.editMovieRankInList = async (req, res, next) => {
 
     let oldRank = list.movies[movieIndex].rank;
     let newRank = req.body.rank || oldRank;
+    console.log(oldRank, newRank);
     if (oldRank < newRank) {
       // handling rest of the ranks
       let listOfIds = list.movies
+        .slice()
         .sort((a, b) => {
-          return b.rank - a.rank;
+          return a.rank - b.rank;
         })
-        .slice(oldRank - 1, newRank + 1);
-      listOfIds = listOfIds.map((movieItem) => {
+        .slice(oldRank, newRank);
+      console.log(listOfIds);
+      listOfIds = listOfIds.map((movieMappingItem) => {
         let q = -1;
         for (const listMovieItem of list.movies) {
           q++;
-          if (listMovieItem.movieId.toString() === movieItem.movieId.toString())
+          console.log(
+            q,
+            listMovieItem.movieId.toString(),
+            movieMappingItem.movieId.toString()
+          );
+          if (
+            listMovieItem.movieId.toString() ===
+            movieMappingItem.movieId.toString()
+          )
             return q;
         }
       });
+      console.log(listOfIds);
       let k = 0;
-      for (let i = newRank; i > oldRank; i--) {
-        list.movies[listOfIds[k]].rank = i - 1;
+      for (let i = oldRank; i < newRank; i++) {
+        list.movies[listOfIds[k]].rank -= 1;
         k++;
       }
       list.movies[movieIndex].rank = newRank;
@@ -281,10 +294,12 @@ exports.editMovieRankInList = async (req, res, next) => {
     } else if (oldRank > newRank) {
       // handling rest of the ranks
       let listOfIds = list.movies
-        .slice(newRank - 1, oldRank + 1)
+        .slice()
         .sort((a, b) => {
-          return a.rank - b.rank;
-        });
+          return b.rank - a.rank;
+        })
+        .slice(newRank - 1, oldRank - 1);
+      console.log(listOfIds);
       listOfIds = listOfIds.map((movieItem) => {
         let q = -1;
         for (const listMovieItem of list.movies) {
@@ -293,6 +308,7 @@ exports.editMovieRankInList = async (req, res, next) => {
             return q;
         }
       });
+      console.log(listOfIds);
       let k = 0;
       for (let i = newRank; i < oldRank; i++) {
         list.movies[listOfIds[k]].rank += 1;
@@ -307,8 +323,9 @@ exports.editMovieRankInList = async (req, res, next) => {
     }
     // list.movies.push({ movieId: movie, rank: rank });
     await list.save();
-    res.status(201);
-    // .json({ message: `you have added ${movie.title} to ${list.title}` });
+    res
+      .status(201)
+      .json({ message: `you have updated ${movie.title} in ${list.title}` });
   } catch (err) {
     err.message = "system failure";
     return next(err);
@@ -316,20 +333,53 @@ exports.editMovieRankInList = async (req, res, next) => {
 };
 
 exports.deleteMovieEntirely = async (req, res, next) => {
-  // check if the movie exists in the general movies collection
   const movieId = req.params.movieId;
-  const movie = Movie.findOne(movieId);
-  if (!movie) {
-    const error = new Error("this movie doesnt even exist!");
-    error.statusCode = 404;
-    return next(error);
-  }
+  try {
+    const movie = Movie.findOne({
+      _id: movieId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
+    if (!movie) {
+      const error = new Error("this movie doesnt even exist!");
+      error.statusCode = 404;
+      return next(error);
+    }
 
-  // delete it if true
-  await Movie.findByIdAndRemove(movieId);
-  // pull it from users and lists
-  // response
-  // bas keda ya mo2men
+    //rearange the ranks in general
+    const maxRankMovie = await Movie.findOne({
+      creator: mongoose.Types.ObjectId(req.userId),
+    }).sort("-rank");
+    let maxRank = maxRankMovie ? maxRankMovie.rank : 0; // maximum value of rank
+    const dist = maxRank - movie.rank;
+    for (let i = 1; i <= dist; i++) {
+      const movingMovie = await Movie.findOne({ rank: movie.rank + i });
+      movingMovie.rank -= 1;
+      movingMovie.save();
+    }
+
+    //rearange the ranks in lists
+    if (movie.lists.length !== 0) {
+      for (const list of movie.lists) {
+        let maxRank = 0; // maximum value of rank
+        for (const movieItem of list.movies) {
+          if (maxRank < movieItem.rank) maxRank = movieItem.rank;
+        }
+        const dist = maxRank - movie.rank;
+        for (let i = 1; i <= dist; i++) {
+          list.movies[maxRank + i].rank -= 1;
+        }
+
+        // pull it from list
+      }
+    }
+    // pull it from user
+
+    // delete it if true
+    await Movie.findByIdAndRemove(movieId);
+
+    // response
+    // bas keda ya mo2men
+  } catch (err) {}
 };
 
 exports.deleteMovieFromList = async (req, res, next) => {
