@@ -115,6 +115,6 @@ router.delete(
 router.get("/:movieId", isAuth, moviesController.singleMovie);
 
 // /GET /movies
-router.get(isAuth, moviesController.allMovies);
+router.get("/", isAuth, moviesController.allMovies);
 
 module.exports = router;

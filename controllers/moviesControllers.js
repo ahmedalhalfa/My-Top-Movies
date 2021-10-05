@@ -350,7 +350,6 @@ exports.deleteMovieEntirely = async (req, res, next) => {
       creator: mongoose.Types.ObjectId(req.userId),
     }).sort("-rank");
     let maxRank = maxRankMovie ? maxRankMovie.rank : 0; // maximum value of rank
-    console.log("max rank in Movies: " + maxRank + "\n\n");
     const dist = maxRank - movie.rank;
     for (let i = 1; i <= dist; i++) {
       const movingMovie = await Movie.findOne({ rank: movie.rank + i });
@@ -363,18 +362,15 @@ exports.deleteMovieEntirely = async (req, res, next) => {
       for (const listId of movie.lists) {
         let maxRank = 0; // maximum value of rank
         const list = await List.findById(listId);
-        // console.log("movies in this list:\n" + list.movies);
         const movieRank = list.movies.find(
           (movie) => movie.movieId.toString() === movieId
-        ).rank;
+          ).rank;
         const movie_idInList = list.movies.find(
           (movie) => movie.movieId.toString() === movieId
         )._id;
-        console.log("movie rank in the list: " + movieRank + "\n\n");
         for (const movieItem of list.movies) {
           if (maxRank < movieItem.rank) maxRank = movieItem.rank;
         }
-        console.log("max rank in the list: " + maxRank + "\n\n");
         const dist = maxRank - movieRank;
         for (let i = 1; i <= dist; i++) {
           list.movies.find((movie) => movie.rank === movieRank + i).rank -= 1;
@@ -392,6 +388,7 @@ exports.deleteMovieEntirely = async (req, res, next) => {
 
     // delete it from general
     await Movie.findByIdAndRemove(movieId);
+    clearImage(movie.imageUrl);
 
     // response
     res
@@ -465,8 +462,18 @@ exports.deleteMovieFromList = async (req, res, next) => {
 };
 
 exports.singleMovie = async (req, res, next) => {
-  // const movie = await Movie.findById(req.params.movieId);
-  // res.status(201).json({ movie: movie });
+  const movie = await Movie.findOne({
+    _id: req.params.movieId,
+    creator: mongoose.Types.ObjectId(req.userId),
+  });
+  if (!movie) {
+    const error = new Error("movie doesnt exist");
+    error.status(404);
+    return next(error);
+  }
+  res.status(201).json({ movie: movie });
 };
 
-exports.allMovies = async (req, res, next) => {};
+exports.allMovies = async (req, res, next) => {
+  res.status(201).json({ movies: await Movie.find({}) });
+};
