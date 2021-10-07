@@ -57,23 +57,18 @@ exports.editMovie = async (req, res, next) => {
   const newTitle = req.body.title;
   const newDesc = req.body.description;
 
-  // add validators and check the errors --> check existence
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return errorHandler(next, )
-    const error = new Error("validation failed");
-    error.statusCode = 422;
-    error.data = errors.array();
-    return next(error);
+    return errorHandler(next, "validation failed", 422, errors.array());
   }
 
-  // you dont edit the creator neither the lists
   try {
-    const movie = await Movie.findById(movieId); // add the user id
+    const movie = await Movie.findOne({
+      _id: movieId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
     if (!movie) {
-      const error = new Error("this movies doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this movies doesn't exist", 404);
     }
 
     if (newTitle) {
@@ -130,7 +125,7 @@ exports.editMovie = async (req, res, next) => {
         .json({ message: "upadted the movie info", movie: movie });
     }
   } catch (err) {
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
@@ -149,21 +144,15 @@ exports.addMovieToList = async (req, res, next) => {
     });
 
     if (!movie) {
-      const error = new Error("this movie doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this movie doesn't exist", 404);
     }
     if (!list) {
-      const error = new Error("this list doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this list doesn't exist", 404);
     }
 
     for (const listItem of movie.lists) {
       if (listItem.toString() === list._id.toString()) {
-        const error = new Error("this movie is already in this list");
-        error.statusCode = 406;
-        return next(error);
+        return errorHandler(next, "this movie is already in this list", 406);
       }
     }
 
@@ -172,9 +161,7 @@ exports.addMovieToList = async (req, res, next) => {
       if (maxRank < movieItem.rank) maxRank = movieItem.rank;
     }
     if (rank > maxRank + 1 || rank <= 0) {
-      const error = new Error("sorry, invalid rank");
-      error.statusCode = 406;
-      return next(error);
+      return errorHandler(next, "sorry, invalid rank", 406);
     }
 
     if (rank <= maxRank) {
@@ -195,9 +182,7 @@ exports.addMovieToList = async (req, res, next) => {
       .status(201)
       .json({ message: `you have added ${movie.title} to ${list.title}` });
   } catch (err) {
-    err.message = "system failure";
-    console.log(err);
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
@@ -216,23 +201,20 @@ exports.editMovieRankInList = async (req, res, next) => {
     });
 
     if (!movie) {
-      const error = new Error("this movie doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this movie doesn't exist", 404);
     }
     if (!list) {
-      const error = new Error("this list doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this list doesn't exist", 404);
     }
 
+    let existFlag = 0;
     for (const listItem of movie.lists) {
       if (listItem.toString() === list._id.toString()) {
-        break;
+        existFlag = 1;
       }
-      const error = new Error("this movie isn't in this list");
-      error.statusCode = 406;
-      return next(error);
+    }
+    if (existFlag === 0) {
+      return errorHandler(next, "this movie isn't in this list", 404);
     }
 
     let maxRank = 0; // maximum value of rank
@@ -244,14 +226,11 @@ exports.editMovieRankInList = async (req, res, next) => {
       if (maxRank < movieItem.rank) maxRank = movieItem.rank;
     }
     if (rank > list.movies.length || rank <= 0) {
-      const error = new Error("sorry, invalid rank");
-      error.statusCode = 406;
-      return next(error);
+      return errorHandler(next, "sorry, invalid rank", 406);
     }
 
     let oldRank = list.movies[movieIndex].rank;
     let newRank = req.body.rank || oldRank;
-    console.log(oldRank, newRank);
     if (oldRank < newRank) {
       // handling rest of the ranks
       let listOfIds = list.movies
@@ -260,16 +239,10 @@ exports.editMovieRankInList = async (req, res, next) => {
           return a.rank - b.rank;
         })
         .slice(oldRank, newRank);
-      console.log(listOfIds);
       listOfIds = listOfIds.map((movieMappingItem) => {
         let q = -1;
         for (const listMovieItem of list.movies) {
           q++;
-          console.log(
-            q,
-            listMovieItem.movieId.toString(),
-            movieMappingItem.movieId.toString()
-          );
           if (
             listMovieItem.movieId.toString() ===
             movieMappingItem.movieId.toString()
@@ -277,7 +250,6 @@ exports.editMovieRankInList = async (req, res, next) => {
             return q;
         }
       });
-      console.log(listOfIds);
       let k = 0;
       for (let i = oldRank; i < newRank; i++) {
         list.movies[listOfIds[k]].rank -= 1;
@@ -297,7 +269,6 @@ exports.editMovieRankInList = async (req, res, next) => {
           return b.rank - a.rank;
         })
         .slice(newRank - 1, oldRank - 1);
-      console.log(listOfIds);
       listOfIds = listOfIds.map((movieItem) => {
         let q = -1;
         for (const listMovieItem of list.movies) {
@@ -306,7 +277,6 @@ exports.editMovieRankInList = async (req, res, next) => {
             return q;
         }
       });
-      console.log(listOfIds);
       let k = 0;
       for (let i = newRank; i < oldRank; i++) {
         list.movies[listOfIds[k]].rank += 1;
@@ -325,8 +295,7 @@ exports.editMovieRankInList = async (req, res, next) => {
       .status(201)
       .json({ message: `you have updated ${movie.title} in ${list.title}` });
   } catch (err) {
-    err.message = "system failure";
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
@@ -338,9 +307,7 @@ exports.deleteMovieEntirely = async (req, res, next) => {
       creator: mongoose.Types.ObjectId(req.userId),
     });
     if (!movie) {
-      const error = new Error("this movie doesnt even exist!");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this movie doesnt even exist!", 404);
     }
 
     //rearange the ranks in general
@@ -394,7 +361,7 @@ exports.deleteMovieEntirely = async (req, res, next) => {
       .json({ message: "movie deleted", movies: await Movie.find({}) });
     // bas keda ya mo2men
   } catch (err) {
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
@@ -415,23 +382,20 @@ exports.deleteMovieFromList = async (req, res, next) => {
     });
 
     if (!movie) {
-      const error = new Error("this movie doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this movie doesn't exist", 404);
     }
     if (!list) {
-      const error = new Error("this list doesn't exist");
-      error.statusCode = 404;
-      return next(error);
+      return errorHandler(next, "this list doesn't exist", 404);
     }
 
+    let existFlag = 0;
     for (const listItem of movie.lists) {
       if (listItem.toString() === list._id.toString()) {
-        break;
+        existFlag = 1;
       }
-      const error = new Error("this movie isn't in this list");
-      error.statusCode = 406;
-      return next(error);
+    }
+    if (existFlag === 0) {
+      return errorHandler(next, "this movie isn't in this list", 404);
     }
 
     let maxRank = 0; // maximum value of rank
@@ -455,23 +419,29 @@ exports.deleteMovieFromList = async (req, res, next) => {
       .status(201)
       .json({ message: "deleted the movie from this list", list: list });
   } catch (err) {
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
 exports.singleMovie = async (req, res, next) => {
-  const movie = await Movie.findOne({
-    _id: req.params.movieId,
-    creator: mongoose.Types.ObjectId(req.userId),
-  });
-  if (!movie) {
-    const error = new Error("movie doesnt exist");
-    error.status(404);
-    return next(error);
+  try {
+    const movie = await Movie.findOne({
+      _id: req.params.movieId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
+    if (!movie) {
+      return errorHandler(next, "movie doesnt exist", 404);
+    }
+    res.status(201).json({ movie: movie });
+  } catch (err) {
+    return errorHandler(next, "system failure", 500, err);
   }
-  res.status(201).json({ movie: movie });
 };
 
 exports.allMovies = async (req, res, next) => {
-  res.status(201).json({ movies: await Movie.find({}) });
+  try {
+    res.status(201).json({ movies: await Movie.find({}) });
+  } catch (err) {
+    return errorHandler(next, "system failure", 500, err);
+  }
 };
