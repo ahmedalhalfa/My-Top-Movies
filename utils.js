@@ -7,5 +7,3 @@ exports.clearImage = (filePath) => {
     if (err) console.log(err);
   });
 };
-
-

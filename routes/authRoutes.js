@@ -12,8 +12,12 @@ router.post(
       .isEmail()
       .withMessage("Please enter a valid email")
       .custom(async (value, { req }) => {
-        const userDoc = await User.findOne({ email: req.body.email });
-        if (userDoc) return Promise.reject("E-mail address already exists");
+        try {
+          const userDoc = await User.findOne({ email: req.body.email });
+          if (userDoc) return Promise.reject("E-mail address already exists");
+        } catch (err) {
+          return Promise.reject("system failure");
+        }
       })
       .normalizeEmail(),
     body("password")

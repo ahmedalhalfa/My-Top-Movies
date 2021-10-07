@@ -11,13 +11,11 @@ module.exports = (req, res, next) => {
       "91FFFCEAFFFF70FFFD8700FFF91BFFF34E00FB00000201FB"
     );
   } catch (err) {
-    const error = new Error("system failure");
-    error.data = err;
-    return next(error);
+    throw err;
   }
   if (!decodedToken) {
     const error = new Error("you are not authenticated, please log in proberly");
-    error.statusCode = 403;
+    error.statusCode = 401;
     throw error;
   }
   req.userId = decodedToken.userId;
