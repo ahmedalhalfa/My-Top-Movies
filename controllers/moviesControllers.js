@@ -1,4 +1,5 @@
 const { validationResult } = require("express-validator");
+const { errorHandler } = require("../utils");
 const mongoose = require("mongoose");
 const Movie = require("../models/movie");
 const List = require("../models/list");
@@ -9,10 +10,7 @@ const movie = require("../models/movie");
 exports.addMovie = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    const error = new Error("validation failed");
-    error.statusCode = 422;
-    error.data = errors.array();
-    return next(error);
+    return errorHandler(next, "validation failed", 422, errors.array());
   }
   const title = req.body.title;
   const description = req.body.description;
@@ -50,8 +48,7 @@ exports.addMovie = async (req, res, next) => {
     await user.save();
     res.status(201).json({ message: "added the movie", movie: movie });
   } catch (err) {
-    err.message = "system failure";
-    return next(err);
+    return errorHandler(next, "system failure", 500, err);
   }
 };
 
@@ -63,6 +60,7 @@ exports.editMovie = async (req, res, next) => {
   // add validators and check the errors --> check existence
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    return errorHandler(next, )
     const error = new Error("validation failed");
     error.statusCode = 422;
     error.data = errors.array();
@@ -364,7 +362,7 @@ exports.deleteMovieEntirely = async (req, res, next) => {
         const list = await List.findById(listId);
         const movieRank = list.movies.find(
           (movie) => movie.movieId.toString() === movieId
-          ).rank;
+        ).rank;
         const movie_idInList = list.movies.find(
           (movie) => movie.movieId.toString() === movieId
         )._id;

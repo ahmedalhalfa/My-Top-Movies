@@ -8,6 +8,9 @@ exports.clearImage = (filePath) => {
   });
 };
 
-exports.validationHandler = (req) => {
-  
+exports.errorHandler = (next, message , statusCode, data) => {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    error.data = data;
+    return next(error);
 };
