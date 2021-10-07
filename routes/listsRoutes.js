@@ -24,7 +24,7 @@ router.post(
             );
           }
         } catch (err) {
-          return next(err);
+          return Promise.reject("system error while validating");
         }
       })
       .trim(),
@@ -50,7 +50,7 @@ router.patch(
             );
           }
         } catch (err) {
-          return next(err);
+          return Promise.reject("system error while validating");
         }
       })
       .trim(),

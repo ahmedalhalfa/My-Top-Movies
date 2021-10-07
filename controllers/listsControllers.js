@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 exports.createList = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    errorHandler(next, "title validation failed", 422, errors.array());
+    return errorHandler(next, "title validation failed", 422, errors.array());
   }
 
   const title = req.body.title;
@@ -26,7 +26,7 @@ exports.createList = async (req, res, next) => {
       list: list,
     });
   } catch (err) {
-    errorHandler(
+    return errorHandler(
       next,
       "system failure, couldn't save the list in the database",
       500,
@@ -88,7 +88,7 @@ exports.deleteList = async (req, res, next) => {
 exports.singleList = async (req, res, next) => {
   const listId = req.params.listId;
   try {
-    const list = await List.find({
+    const list = await List.findOne({
       _id: listId,
       creator: mongoose.Types.ObjectId(req.userId),
     });

@@ -24,7 +24,7 @@ router.post(
             return Promise.reject("this movie already exists");
           }
         } catch (err) {
-          return Promise.reject("system failure");
+          return Promise.reject("system error while validating");
         }
       }),
     body("description").trim(),
@@ -41,7 +41,7 @@ router.post(
             return Promise.reject("sorry, this rank is invalid");
           }
         } catch (err) {
-          return Promise.reject("system failure");
+          return Promise.reject("system error while validating");
         }
       }),
   ],
@@ -68,7 +68,7 @@ router.patch(
             );
           }
         } catch (err) {
-          return Promise.reject("system failure");
+          return Promise.reject("system error while validating");
         }
       }),
     body("description").trim(),
@@ -80,7 +80,7 @@ router.patch(
           return Promise.reject("sorry, this rank is invalid");
         }
       } catch (err) {
-        return Promise.reject("system failure");
+        return Promise.reject("system error while validating");
       }
     }),
   ],
