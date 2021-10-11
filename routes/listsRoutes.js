@@ -6,65 +6,60 @@ const isAuth = require("../middlewares/isAuth");
 const { body } = require("express-validator");
 const mongoose = require("mongoose");
 
-// /POST /lists/create
+// /POST /create
 router.post(
   "/create",
   isAuth,
   [
     body("title")
+      .isLength({ min: 1 })
       .custom(async (value, { req }) => {
-        try {
-          const list = await List.findOne({
-            title: req.body.title,
-            creator: mongoose.Types.ObjectId(req.userId),
-          });
-          if (list) {
-            return Promise.reject(
-              "this list already exists, please choose another name"
-            );
-          }
-        } catch (err) {
-          return Promise.reject("system error while validating");
-        }
+        await titleChecker(value, req);
       })
       .trim(),
   ],
   listsController.createList
 );
 
-// /PATCH /lists/:listId
+// /PATCH /:listId
 router.patch(
   "/:listId",
   isAuth,
   [
     body("title")
+      .isLength({ min: 1 })
       .custom(async (value, { req }) => {
-        try {
-          const list = await List.findOne({
-            title: req.body.title,
-            creator: mongoose.Types.ObjectId(req.userId),
-          });
-          if (list) {
-            return Promise.reject(
-              "this list already exists, please choose another name"
-            );
-          }
-        } catch (err) {
-          return Promise.reject("system error while validating");
-        }
+        if ((value = "")) return;
+        await titleChecker(value, req);
       })
       .trim(),
   ],
   listsController.editList
 );
 
-// /DELETE /lists/:listId
+// /DELETE /:listId
 router.delete("/:listId", isAuth, listsController.deleteList);
 
-// /GET //list
+// /GET /:listId
 router.get("/:listId", isAuth, listsController.singleList);
 
-// /GET //lists
+// /GET /
 router.get("/", isAuth, listsController.allLists);
+
+const titleChecker = async (value, req) => {
+  try {
+    const list = await List.findOne({
+      title: value,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
+    if (list) {
+      return Promise.reject(
+        "invalid title, this list already exists, please choose another title"
+      );
+    }
+  } catch (err) {
+    return Promise.reject("system error while validating");
+  }
+};
 
 module.exports = router;

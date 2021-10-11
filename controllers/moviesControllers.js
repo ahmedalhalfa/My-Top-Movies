@@ -20,6 +20,7 @@ exports.addMovie = async (req, res, next) => {
   const lists = [];
 
   try {
+    // rearranging the ranks
     const maxRankMovie = await Movie.findOne({
       creator: mongoose.Types.ObjectId(req.userId),
     }).sort("-rank");
@@ -28,9 +29,12 @@ exports.addMovie = async (req, res, next) => {
     if (rank <= maxRank) {
       const dist = maxRank - rank;
       for (let i = 0; i <= dist; i++) {
-        const movingMovie = await Movie.findOne({ rank: maxRank - i });
+        const movingMovie = await Movie.findOne({
+          creator: mongoose.Types.ObjectId(req.userId),
+          rank: maxRank - i,
+        });
         movingMovie.rank += 1;
-        movingMovie.save();
+        await movingMovie.save();
       }
     }
     const movie = new Movie({
@@ -67,6 +71,8 @@ exports.editMovie = async (req, res, next) => {
       _id: movieId,
       creator: mongoose.Types.ObjectId(req.userId),
     });
+
+    // input checks
     if (!movie) {
       return errorHandler(next, "this movies doesn't exist", 404);
     }
@@ -85,17 +91,22 @@ exports.editMovie = async (req, res, next) => {
       }
     }
 
+    // rearranging the ranks
     let oldRank = movie.rank;
     let newRank = req.body.rank || oldRank;
+
     if (oldRank < newRank) {
-      // handling rest of the ranks
       let listOfTitles = await Movie.find({
         rank: { $gte: oldRank, $lte: newRank },
+        creator: mongoose.Types.ObjectId(req.userId),
       }).sort({ rank: -1 });
       listOfTitles = listOfTitles.map((movieItem) => movieItem.title);
       let j = 0;
       for (let i = newRank; i > oldRank; i--) {
-        const movedMovie = await Movie.findOne({ title: listOfTitles[j] });
+        const movedMovie = await Movie.findOne({
+          creator: mongoose.Types.ObjectId(req.userId),
+          title: listOfTitles[j],
+        });
         movedMovie.rank = i - 1;
         await movedMovie.save();
         j++;
@@ -106,14 +117,17 @@ exports.editMovie = async (req, res, next) => {
         .status(201)
         .json({ message: "upadted the movie info", movie: movie });
     } else if (oldRank > newRank) {
-      // handling rest of the ranks
       let listOfTitles = await Movie.find({
         rank: { $gte: newRank, $lte: oldRank },
+        creator: mongoose.Types.ObjectId(req.userId),
       }).sort({ rank: 1 });
       listOfTitles = listOfTitles.map((movieItem) => movieItem.title);
       let j = 0;
       for (let i = newRank; i < oldRank; i++) {
-        const movedMovie = await Movie.findOne({ title: listOfTitles[j] });
+        const movedMovie = await Movie.findOne({
+          creator: mongoose.Types.ObjectId(req.userId),
+          title: listOfTitles[j],
+        });
         movedMovie.rank = i + 1;
         await movedMovie.save();
         j++;
@@ -143,6 +157,7 @@ exports.addMovieToList = async (req, res, next) => {
       creator: mongoose.Types.ObjectId(req.userId),
     });
 
+    // input checks
     if (!movie) {
       return errorHandler(next, "this movie doesn't exist", 404);
     }
@@ -160,7 +175,7 @@ exports.addMovieToList = async (req, res, next) => {
     for (const movieItem of list.movies) {
       if (maxRank < movieItem.rank) maxRank = movieItem.rank;
     }
-    if (rank > maxRank + 1 || rank <= 0) {
+    if (rank > maxRank + 1 || rank <= 0 || !rank) {
       return errorHandler(next, "sorry, invalid rank", 406);
     }
 
@@ -200,6 +215,7 @@ exports.editMovieRankInList = async (req, res, next) => {
       creator: mongoose.Types.ObjectId(req.userId),
     });
 
+    // input checks
     if (!movie) {
       return errorHandler(next, "this movie doesn't exist", 404);
     }
@@ -217,6 +233,7 @@ exports.editMovieRankInList = async (req, res, next) => {
       return errorHandler(next, "this movie isn't in this list", 404);
     }
 
+    // finding the max movie rank in the list and our movie index
     let maxRank = 0; // maximum value of rank
     let movieIndex;
     let j = -1;
@@ -229,10 +246,10 @@ exports.editMovieRankInList = async (req, res, next) => {
       return errorHandler(next, "sorry, invalid rank", 406);
     }
 
+    // rearranging the ranks
     let oldRank = list.movies[movieIndex].rank;
     let newRank = req.body.rank || oldRank;
     if (oldRank < newRank) {
-      // handling rest of the ranks
       let listOfIds = list.movies
         .slice()
         .sort((a, b) => {
@@ -262,7 +279,6 @@ exports.editMovieRankInList = async (req, res, next) => {
         movie: list.movies[movieIndex],
       });
     } else if (oldRank > newRank) {
-      // handling rest of the ranks
       let listOfIds = list.movies
         .slice()
         .sort((a, b) => {
@@ -289,7 +305,6 @@ exports.editMovieRankInList = async (req, res, next) => {
         movie: list.movies[movieIndex],
       });
     }
-    // list.movies.push({ movieId: movie, rank: rank });
     await list.save();
     res
       .status(201)
@@ -310,64 +325,58 @@ exports.deleteMovieEntirely = async (req, res, next) => {
       return errorHandler(next, "this movie doesnt even exist!", 404);
     }
 
-    //rearange the ranks in general
+    // rearrange the ranks in the general movies collection
     const maxRankMovie = await Movie.findOne({
       creator: mongoose.Types.ObjectId(req.userId),
     }).sort("-rank");
     let maxRank = maxRankMovie ? maxRankMovie.rank : 0; // maximum value of rank
     const dist = maxRank - movie.rank;
     for (let i = 1; i <= dist; i++) {
-      const movingMovie = await Movie.findOne({ rank: movie.rank + i });
+      const movingMovie = await Movie.findOne({
+        creator: mongoose.Types.ObjectId(req.userId),
+        rank: movie.rank + i,
+      });
       movingMovie.rank -= 1;
       await movingMovie.save();
     }
 
-    //rearange the ranks in lists
+    // rearrange the ranks in each list that the movie belongs to and then remove the movie from the list
     if (movie.lists.length !== 0) {
       for (const listId of movie.lists) {
-        let maxRank = 0; // maximum value of rank
-        const list = await List.findById(listId);
-        const movieRank = list.movies.find(
-          (movie) => movie.movieId.toString() === movieId
-        ).rank;
-        const movie_idInList = list.movies.find(
-          (movie) => movie.movieId.toString() === movieId
-        )._id;
-        for (const movieItem of list.movies) {
-          if (maxRank < movieItem.rank) maxRank = movieItem.rank;
-        }
-        const dist = maxRank - movieRank;
-        for (let i = 1; i <= dist; i++) {
-          list.movies.find((movie) => movie.rank === movieRank + i).rank -= 1;
-        }
-        // pull it from list
-        list.movies.id(movie_idInList).remove();
-        await list.save();
+        const list = await List.findOne({
+          _id: listId,
+          creator: mongoose.Types.ObjectId(req.userId),
+        });
+        await deleteMovieFromListFn(
+          listId,
+          list,
+          movieId,
+          false,
+          req,
+          res,
+          next
+        );
       }
     }
-
-    // pull it from user
     const user = await User.findById(req.userId);
     user.movies.pull(movieId);
     await user.save();
 
-    // delete it from general
-    await Movie.findByIdAndRemove(movieId);
+    await Movie.findOneAndDelete({
+      _id: movieId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
     clearImage(movie.imageUrl);
 
-    // response
     res
       .status(201)
       .json({ message: "movie deleted", movies: await Movie.find({}) });
-    // bas keda ya mo2men
   } catch (err) {
     return errorHandler(next, "system failure", 500, err);
   }
 };
 
 exports.deleteMovieFromList = async (req, res, next) => {
-  // check the existence of the list and the movie
-  // check the existence of the movie in the list
   const listId = req.params.listId;
   const movieId = req.params.movieId;
   const rank = req.body.rank;
@@ -381,6 +390,7 @@ exports.deleteMovieFromList = async (req, res, next) => {
       creator: mongoose.Types.ObjectId(req.userId),
     });
 
+    // input checks
     if (!movie) {
       return errorHandler(next, "this movie doesn't exist", 404);
     }
@@ -397,27 +407,7 @@ exports.deleteMovieFromList = async (req, res, next) => {
     if (existFlag === 0) {
       return errorHandler(next, "this movie isn't in this list", 404);
     }
-
-    let maxRank = 0; // maximum value of rank
-    const movieRank = list.movies.find(
-      (movie) => movie.movieId.toString() === movieId
-    ).rank;
-    const movie_idInList = list.movies.find(
-      (movie) => movie.movieId.toString() === movieId
-    )._id;
-    for (const movieItem of list.movies) {
-      if (maxRank < movieItem.rank) maxRank = movieItem.rank;
-    }
-    const dist = maxRank - movieRank;
-    for (let i = 1; i <= dist; i++) {
-      list.movies.find((movie) => movie.rank === movieRank + i).rank -= 1;
-    }
-    // pull it from list
-    list.movies.id(movie_idInList).remove();
-    await list.save();
-    res
-      .status(201)
-      .json({ message: "deleted the movie from this list", list: list });
+    await deleteMovieFromListFn(listId, list, movieId, true, req, res, next);
   } catch (err) {
     return errorHandler(next, "system failure", 500, err);
   }
@@ -440,7 +430,58 @@ exports.singleMovie = async (req, res, next) => {
 
 exports.allMovies = async (req, res, next) => {
   try {
-    res.status(201).json({ movies: await Movie.find({}) });
+    res
+      .status(201)
+      .json({
+        movies: await Movie.find({
+          creator: mongoose.Types.ObjectId(req.userId),
+        }),
+      });
+  } catch (err) {
+    return errorHandler(next, "system failure", 500, err);
+  }
+};
+
+const deleteMovieFromListFn = async (
+  listId,
+  list,
+  movieId,
+  listReq,
+  req,
+  res,
+  next
+) => {
+  let maxRank = 0; // maximum value of rank
+  try {
+    // rearrange the ranks then remove the movie
+    const movieInList = list.movies.find(
+      (movie) => movie.movieId.toString() === movieId
+    );
+    for (const movieItem of list.movies) {
+      if (maxRank < movieItem.rank) maxRank = movieItem.rank;
+    }
+    const dist = maxRank - movieInList.rank;
+    for (let i = 1; i <= dist; i++) {
+      list.movies.find(
+        (movieInListItem) => movieInListItem.rank === movieInList.rank + i
+      ).rank -= 1;
+    }
+
+    list.movies.id(movieInList._id).remove();
+    await list.save();
+
+    const originalMovie = await Movie.findOne({
+      _id: movieId,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
+
+    if (listReq) {
+      originalMovie.lists.pull(listId);
+      await originalMovie.save();
+      return res
+        .status(201)
+        .json({ message: "deleted the movie from this list", list: list });
+    }
   } catch (err) {
     return errorHandler(next, "system failure", 500, err);
   }
