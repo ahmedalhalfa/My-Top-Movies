@@ -27,7 +27,6 @@ router.patch(
   isAuth,
   [
     body("title")
-      .isLength({ min: 1 })
       .custom(async (value, { req }) => {
         if ((value = "")) return;
         await titleChecker(value, req);

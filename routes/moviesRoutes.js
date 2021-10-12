@@ -45,7 +45,6 @@ router.patch(
   isAuth,
   [
     body("title")
-      .isLength({ min: 1 })
       .trim()
       .custom(async (value, { req }) => {
         if (value === "") return;

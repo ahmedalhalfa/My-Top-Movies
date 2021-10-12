@@ -37,6 +37,8 @@ exports.addMovie = async (req, res, next) => {
         await movingMovie.save();
       }
     }
+    // here i suppose the front-end to make the rank 0 by default if the user doesn't provide it
+    else if (rank === 0) rank = maxRank + 1;
     const movie = new Movie({
       title: title,
       description: description,
@@ -112,7 +114,7 @@ exports.editMovie = async (req, res, next) => {
         j++;
       }
       movie.rank = newRank;
-      movie.save();
+      await movie.save();
       return res
         .status(201)
         .json({ message: "upadted the movie info", movie: movie });
@@ -133,7 +135,12 @@ exports.editMovie = async (req, res, next) => {
         j++;
       }
       movie.rank = newRank;
-      movie.save();
+      await movie.save();
+      return res
+        .status(201)
+        .json({ message: "upadted the movie info", movie: movie });
+    } else {
+      await movie.save();
       return res
         .status(201)
         .json({ message: "upadted the movie info", movie: movie });
@@ -188,13 +195,15 @@ exports.addMovieToList = async (req, res, next) => {
         list.movies[movieIndex].rank += 1;
       }
     }
+    // here i suppose the front-end to make the rank 0 by default if the user doesn't provide it
+    else if (rank === 0) rank = maxRank + 1;
     movie.lists.push(list);
     await movie.save();
 
     list.movies.push({ movieId: movie, rank: rank });
     await list.save();
     res
-      .status(201)
+      .status(200)
       .json({ message: `you have added ${movie.title} to ${list.title}` });
   } catch (err) {
     return errorHandler(next, "system failure", 500, err);
@@ -430,13 +439,11 @@ exports.singleMovie = async (req, res, next) => {
 
 exports.allMovies = async (req, res, next) => {
   try {
-    res
-      .status(201)
-      .json({
-        movies: await Movie.find({
-          creator: mongoose.Types.ObjectId(req.userId),
-        }),
-      });
+    res.status(201).json({
+      movies: await Movie.find({
+        creator: mongoose.Types.ObjectId(req.userId),
+      }),
+    });
   } catch (err) {
     return errorHandler(next, "system failure", 500, err);
   }
@@ -470,12 +477,11 @@ const deleteMovieFromListFn = async (
     list.movies.id(movieInList._id).remove();
     await list.save();
 
-    const originalMovie = await Movie.findOne({
-      _id: movieId,
-      creator: mongoose.Types.ObjectId(req.userId),
-    });
-
     if (listReq) {
+      const originalMovie = await Movie.findOne({
+        _id: movieId,
+        creator: mongoose.Types.ObjectId(req.userId),
+      });
       originalMovie.lists.pull(listId);
       await originalMovie.save();
       return res
