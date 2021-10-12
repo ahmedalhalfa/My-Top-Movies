@@ -9,6 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const listsRoutes = require("./routes/listsRoutes");
 const moviesRoutes = require("./routes/moviesRoutes");
 
+// multer configuration functions
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "images");

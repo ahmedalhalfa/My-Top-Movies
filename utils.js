@@ -7,3 +7,17 @@ exports.clearImage = (filePath) => {
     if (err) console.log(err);
   });
 };
+
+exports.errorHandler = (next, message, statusCode, data) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.data = data;
+  return next(error);
+};
+
+exports.findOneList = (id) => {
+  return List.findOne({
+    _id: id,
+    creator: mongoose.Types.ObjectId(req.userId),
+  });
+};

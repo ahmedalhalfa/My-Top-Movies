@@ -7,26 +7,17 @@ const List = require("../models/list");
 const { body } = require("express-validator");
 const isAuth = require("../middlewares/isAuth");
 
-// /POST /movies/add
+// /POST /add
 router.post(
   "/add",
   isAuth,
   [
     body("title")
-      .trim()
+      .isLength({ min: 1 })
       .custom(async (value, { req }) => {
-        try {
-          const movie = await Movie.findOne({
-            title: value,
-            creator: mongoose.Types.ObjectId(req.userId),
-          });
-          if (movie) {
-            return Promise.reject("this movie already exists");
-          }
-        } catch (err) {
-          return Promise.reject("system failure");
-        }
-      }),
+        await titleChecker(value, req);
+      })
+      .trim(),
     body("description").trim(),
     body("rank")
       .isNumeric()
@@ -41,14 +32,14 @@ router.post(
             return Promise.reject("sorry, this rank is invalid");
           }
         } catch (err) {
-          return Promise.reject("system failure");
+          return Promise.reject("system error while validating");
         }
       }),
   ],
   moviesController.addMovie
 );
 
-// /PATCH /movies/:movieId
+// /PATCH /:movieId
 router.patch(
   "/:movieId",
   isAuth,
@@ -57,19 +48,7 @@ router.patch(
       .trim()
       .custom(async (value, { req }) => {
         if (value === "") return;
-        try {
-          const movie = await Movie.findOne({
-            title: value,
-            creator: mongoose.Types.ObjectId(req.userId),
-          });
-          if (movie) {
-            return Promise.reject(
-              "invalid new title, this movie already exists, please choose another title"
-            );
-          }
-        } catch (err) {
-          return Promise.reject("system failure");
-        }
+        await titleChecker(value, req);
       }),
     body("description").trim(),
     body("rank").custom(async (value, { req }) => {
@@ -80,16 +59,16 @@ router.patch(
           return Promise.reject("sorry, this rank is invalid");
         }
       } catch (err) {
-        return Promise.reject("system failure");
+        return Promise.reject("system error while validating");
       }
     }),
   ],
   moviesController.editMovie
 );
 
-// /POST /:movieId/addToList/:listId
+// /POST /:movieId/lists/:listId
 router.post(
-  "/:movieId/addToList/:listId",
+  "/:movieId/lists/:listId",
   isAuth,
   moviesController.addMovieToList
 );
@@ -101,20 +80,36 @@ router.patch(
   moviesController.editMovieRankInList
 );
 
-// /DELETE /movies/:movieId
+// /DELETE /:movieId
 router.delete("/:movieId", isAuth, moviesController.deleteMovieEntirely);
 
-// /DELETE /movies/:movieId/lists/:listId/
+// /DELETE /:movieId/lists/:listId/
 router.delete(
   "/:movieId/lists/:listId",
   isAuth,
   moviesController.deleteMovieFromList
 );
 
-// /GET /movies/:movieId
+// /GET /:movieId
 router.get("/:movieId", isAuth, moviesController.singleMovie);
 
-// /GET /movies
+// /GET /
 router.get("/", isAuth, moviesController.allMovies);
+
+const titleChecker = async (value, req) => {
+  try {
+    const movie = await Movie.findOne({
+      title: value,
+      creator: mongoose.Types.ObjectId(req.userId),
+    });
+    if (movie) {
+      return Promise.reject(
+        "invalid title, this movie already exists, please choose another title"
+      );
+    }
+  } catch (err) {
+    return Promise.reject("system error while validating");
+  }
+};
 
 module.exports = router;
