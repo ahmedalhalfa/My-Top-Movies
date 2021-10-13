@@ -1,3 +1,5 @@
 **\node_modules
 notes.txt
 images
+.env
+access.log

@@ -50,8 +50,8 @@ exports.postLogin = async (req, res, next) => {
           email: user.email,
           userId: user._id.toString(),
         },
-        "91FFFCEAFFFF70FFFD8700FFF91BFFF34E00FB00000201FB",
-        { expiresIn: "10h" }
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_TOKEN_DURATION }
       );
       res.status(200).json({ token: token, message: "you logged in" });
     } else res.status(403).json({ message: "wrong password" });

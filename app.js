@@ -1,8 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
 const app = express();
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
+const dotenv = require("dotenv").config();
 
 // importing the routes
 const authRoutes = require("./routes/authRoutes");
@@ -30,6 +35,15 @@ const fileFilter = (req, file, cb) => {
     cb(null, false);
   }
 };
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+app.use(helmet());
+app.use(compression());
+app.use(morgan("combined", { stream: accessLogStream }));
+
 // CORS
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -66,11 +80,9 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(
-    "mongodb+srv://halfa:P9v6sWLhDwjNikK@mongocluster.dpm9h.mongodb.net/myTopMovies?retryWrites=true&w=majority"
-  )
+  .connect(process.env.MONGO_DB_URI)
   .then((result) => {
-    app.listen(8080);
+    app.listen(process.env.PORT);
     console.log("connected to mongo Atlas");
   })
   .catch((err) => {
