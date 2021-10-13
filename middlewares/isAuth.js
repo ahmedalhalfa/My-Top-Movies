@@ -15,7 +15,7 @@ module.exports = (req, res, next) => {
       "you are not authenticated, please log in proberly"
     );
     error.statusCode = 401;
-    throw error;
+    return next(error);
   }
   req.userId = decodedToken.userId;
   next();

@@ -86,7 +86,5 @@ mongoose
     console.log("connected to mongo Atlas");
   })
   .catch((err) => {
-    res
-      .status(500)
-      .json({ message: "system error, couldn't connect to the database" });
+    throw err;
   });
