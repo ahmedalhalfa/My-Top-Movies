@@ -8,14 +8,18 @@ module.exports = (req, res, next) => {
   try {
     decodedToken = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
-    throw err;
+    const error = new Error(
+      "you are not authenticated, please log in proberly"
+    );
+    error.statusCode = 401;
+    throw error;
   }
   if (!decodedToken) {
     const error = new Error(
       "you are not authenticated, please log in proberly"
     );
     error.statusCode = 401;
-    return next(error);
+    throw error;
   }
   req.userId = decodedToken.userId;
   next();
