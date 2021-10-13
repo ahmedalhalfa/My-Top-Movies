@@ -18,6 +18,7 @@
     "multer": "^1.4.3"
   },
   "devDependencies": {
+    "extract-mongo-schema": "^0.2.10",
     "nodemon": "^2.0.12"
   }
 }
