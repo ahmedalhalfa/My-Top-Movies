@@ -37,7 +37,7 @@
 
 
 ## API Documentation
-documentation with postman: [My Top Movies API](https://documenter.postman.com/preview/17188484-1faa9dac-1499-4c7b-8d30-f30ba375e240)
+documentation with postman: [My Top Movies API](https://documenter.getpostman.com/view/17188484/UV5UjyYG)
 
 ## Database Model
 ### mogoose schemas 
