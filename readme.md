@@ -31,6 +31,8 @@
     - all the movies the user has created 
 - Lists 
     - every list has ranked movies and these ranks are not related to the ranks in the general
+ > API Security
+ - HTTP Secure Headers with helmet
 
 
 
