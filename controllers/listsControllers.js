@@ -113,9 +113,9 @@ exports.singleList = async (req, res, next) => {
       },
     });
     if (!list) {
-      return errorHandler(next, "sorry, this list doesn't exist", 404, err);
+      return errorHandler(next, "sorry, this list doesn't exist", 404);
     }
-    res.status(200).json({ data: list.populate("movies") });
+    res.status(200).json({ list: list });
   } catch (err) {
     return errorHandler(
       next,
@@ -140,7 +140,7 @@ exports.allLists = async (req, res, next) => {
       return errorHandler(next, "sorry, you didn't create any list yet", 404);
     }
 
-    res.status(200).json({ data: lists });
+    res.status(200).json({ lists: lists });
   } catch (err) {
     return errorHandler(
       next,
