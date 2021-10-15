@@ -41,7 +41,7 @@ documentation with postman: [My Top Movies API](https://documenter.getpostman.co
 
 ## Database Model
 ### mogoose schemas 
-![screenshot](https://imgur.com/a/Qji1TDp)
+![screenshot](https://i.imgur.com/1bVttZq.jpeg)
 ## Requirement
 
 - NodeJS
