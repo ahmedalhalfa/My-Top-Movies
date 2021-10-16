@@ -4,7 +4,6 @@ const List = require("../models/list");
 const User = require("../models/user");
 const Movie = require("../models/movie");
 const mongoose = require("mongoose");
-const { findById } = require("../models/movie");
 
 exports.createList = async (req, res, next) => {
   const errors = validationResult(req);
